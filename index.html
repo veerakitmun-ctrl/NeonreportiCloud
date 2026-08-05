@@ -195,6 +195,7 @@
     <button class="filter-btn" style="border-color:#d93025;color:#a01010" onclick="setStatus('broken',this)">❌ เปิดไม่ได้</button>
     <button class="filter-btn" onclick="setStatus('unchecked',this)">— ยังไม่ตรวจ</button>
   </div>
+  <button id="copy-url-btn" class="filter-btn" onclick="copyStateURL()" style="margin-left:auto;border-color:#0071e3;color:#0071e3;white-space:nowrap">💾 บันทึก URL สถานะ</button>
   <span class="result-count" id="result-count">95 ไฟล์</span>
 </div>
 
@@ -379,10 +380,64 @@
 let activeBrand = 'all';
 let activeStatus = 'all';
 
-// Status filter group (second group of .filter-btn)
+/* ── State persistence via URL hash ── */
+function saveStateToHash() {
+  const btns = document.querySelectorAll('.status-btn');
+  // 0 = unchecked, 1 = ok, 2 = broken  → compact string of digits
+  const str = Array.from(btns).map(b => b.classList.contains('ok') ? '1' : b.classList.contains('broken') ? '2' : '0').join('');
+  history.replaceState(null, '', '#' + str);
+}
+
+function loadStateFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash) return;
+  const btns = document.querySelectorAll('.status-btn');
+  btns.forEach((btn, i) => {
+    const code = hash[i] || '0';
+    const row = btn.closest('tr');
+    btn.classList.remove('ok', 'broken');
+    row.classList.remove('st-ok', 'st-broken');
+    if (code === '1') {
+      btn.classList.add('ok');
+      btn.textContent = '✅ เปิดได้';
+      row.classList.add('st-ok');
+    } else if (code === '2') {
+      btn.classList.add('broken');
+      btn.textContent = '❌ เปิดไม่ได้';
+      row.classList.add('st-broken');
+    } else {
+      btn.textContent = '— ยังไม่ตรวจ';
+    }
+  });
+  updateSummary();
+}
+
+function copyStateURL() {
+  saveStateToHash();
+  const url = location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copy-url-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅ คัดลอกแล้ว!';
+    btn.style.background = '#e8faf0';
+    btn.style.borderColor = '#34c759';
+    btn.style.color = '#1a7a3a';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 2000);
+  }).catch(() => {
+    prompt('คัดลอก URL นี้:', url);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', loadStateFromHash);
+
+/* ── Status filter group ── */
 function setStatus(status, btn) {
   activeStatus = status;
-  // Only deactivate buttons inside the same .status-filter container
   btn.closest('.status-filter').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   filter();
@@ -415,6 +470,7 @@ function toggleStatus(btn) {
     row.classList.remove('st-ok', 'st-broken');
   }
   updateSummary();
+  saveStateToHash();
   filter();
 }
 
