@@ -381,6 +381,9 @@ let activeBrand = 'all';
 let activeStatus = 'all';
 
 /* ── State persistence via URL hash ── */
+// Default state baked in — matches last saved URL on 2026-08-11
+const DEFAULT_STATE = '11222222121222222222222221111221222122221122222222211222212111222222222122212211222222222222222';
+
 function saveStateToHash() {
   const btns = document.querySelectorAll('.status-btn');
   // 0 = unchecked, 1 = ok, 2 = broken  → compact string of digits
@@ -389,8 +392,7 @@ function saveStateToHash() {
 }
 
 function loadStateFromHash() {
-  const hash = location.hash.slice(1);
-  if (!hash) return;
+  const hash = location.hash.slice(1) || DEFAULT_STATE;
   const btns = document.querySelectorAll('.status-btn');
   btns.forEach((btn, i) => {
     const code = hash[i] || '0';
